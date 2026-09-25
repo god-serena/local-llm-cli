@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+# Qwythos 9B High-Precision Subagent Launcher (Q8_0 Quantization)
+# Target model: $LLAMA_MODELS_DIR/Emperio_Qwythos-9B-v2-MTP-Q8_0.gguf
+# Server: ${LLAMA_SERVER_URL:-http://localhost:8080}/v1
+
+HARNESS_BIN="${HARNESS_BIN:-${PI_BIN:-$HOME/.volta/bin/pi}}"
+MODELS_DIR="${LLAMA_MODELS_DIR:-$HOME/llama-models}"
+SERVER_URL="${LLAMA_SERVER_URL:-http://localhost:8080}"
+MODEL_PATH="${MODELS_DIR}/Emperio_Qwythos-9B-v2-MTP-Q8_0.gguf"
+DEFAULT_SYSTEM="You are Qwythos 9B (Q8_0), an expert reasoning and coding subagent. Provide precise, well-structured, and accurate technical solutions."
+
+SYSTEM_PROMPT="$DEFAULT_SYSTEM"
+PROMPT=""
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -s|--system)
+      SYSTEM_PROMPT="$2"
+      shift 2
+      ;;
+    -h|--help)
+      echo "Usage: qwythos [-s \"<system_prompt>\"] \"<prompt>\""
+      echo "       echo \"<prompt>\" | qwythos"
+      exit 0
+      ;;
+    *)
+      if [ -z "$PROMPT" ]; then
+        PROMPT="$1"
+      else
+        PROMPT="$PROMPT $1"
+      fi
+      shift
+      ;;
+  esac
+done
+
+if [ -z "$PROMPT" ] && [ ! -t 0 ]; then
+  PROMPT=$(cat)
+fi
+
+if [ -z "$PROMPT" ]; then
+  echo "Usage: qwythos [-s \"<system_prompt>\"] \"<prompt>\""
+  exit 1
+fi
+
+if [ -x "$HARNESS_BIN" ]; then
+    "$HARNESS_BIN" --provider llama-cpp --model "qwythos" --system "$SYSTEM_PROMPT" -p "$PROMPT" 2>/dev/null || {
+      curl -s "${SERVER_URL}/v1/chat/completions" \
+        -H "Content-Type: application/json" \
+        -d "{
+          \"model\": \"$MODEL_PATH\",
+          \"temperature\": 0.1,
+          \"messages\": [
+            {\"role\": \"system\", \"content\": $(jq -n --arg s "$SYSTEM_PROMPT" '$s')},
+            {\"role\": \"user\", \"content\": $(jq -n --arg p "$PROMPT" '$p')}
+          ]
+        }" | jq -r '.choices[0].message.content // .error.message'
+    }
+else
+    curl -s "${SERVER_URL}/v1/chat/completions" \
+      -H "Content-Type: application/json" \
+      -d "{
+        \"model\": \"$MODEL_PATH\",
+        \"temperature\": 0.1,
+        \"messages\": [
+          {\"role\": \"system\", \"content\": $(jq -n --arg s "$SYSTEM_PROMPT" '$s')},
+          {\"role\": \"user\", \"content\": $(jq -n --arg p "$PROMPT" '$p')}
+        ]" | jq -r '.choices[0].message.content // .error.message'
+fi

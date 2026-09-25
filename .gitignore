@@ -1,0 +1,10 @@
+# OS / Editor files
+.DS_Store
+*.swp
+*~
+.idea/
+.vscode/
+
+# Local model weights or temp logs
+*.gguf
+*.log

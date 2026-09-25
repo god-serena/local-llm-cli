@@ -1,0 +1,103 @@
+#!/usr/bin/env bash
+# Qwythos Llama Server Launcher
+# Serves local Qwythos 9B v2 MTP models on http://0.0.0.0:8080
+#
+# Environment Variables (with sensible defaults):
+#   LLAMA_BIN        - Path to llama binary (default: $HOME/.local/bin/llama)
+#   LLAMA_MODELS_DIR - Path to GGUF models folder (default: $HOME/llama-models)
+#   LLAMA_PORT       - Server port (default: 8080)
+#   LLAMA_HOST       - Server host IP (default: 0.0.0.0)
+
+LLAMA_BIN="${LLAMA_BIN:-$HOME/.local/bin/llama}"
+MODELS_DIR="${LLAMA_MODELS_DIR:-$HOME/llama-models}"
+
+MODEL_Q5="${MODELS_DIR}/Emperio_Qwythos-9B-v2-MTP-Q5_K_M.gguf"
+MODEL_Q8="${MODELS_DIR}/Emperio_Qwythos-9B-v2-MTP-Q8_0.gguf"
+
+MODE="q5"
+PORT="${LLAMA_PORT:-8080}"
+HOST="${LLAMA_HOST:-0.0.0.0}"
+CTX_SIZE="32768"
+
+usage() {
+    echo "Usage: serve-qwythos [q5|q8|fast|precision] [--port 8080] [--ctx 32768]"
+    echo ""
+    echo "Modes:"
+    echo "  q5, fast (default) -> Q5_K_M model (Parallel 2, ubatch 1024, MTP draft-mtp)"
+    echo "  q8, precision      -> Q8_0 model   (Parallel 2, ubatch 1024, MTP draft-mtp)"
+    echo ""
+    exit 1
+}
+
+# Parse positional argument for mode
+if [[ $# -gt 0 && ! "$1" =~ ^-- ]]; then
+    case "$1" in
+        q5|fast)
+            MODE="q5"
+            shift
+            ;;
+        q8|precision)
+            MODE="q8"
+            shift
+            ;;
+        -h|--help)
+            usage
+            ;;
+    esac
+fi
+
+# Parse remaining optional flags
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --port)
+            PORT="$2"
+            shift 2
+            ;;
+        --ctx)
+            CTX_SIZE="$2"
+            shift 2
+            ;;
+        -h|--help)
+            usage
+            ;;
+        *)
+            usage
+            ;;
+    esac
+done
+
+if [ "$MODE" = "q5" ]; then
+    echo "Starting Qwythos 9B (Q5_K_M Fast Subagent Mode with MTP) on http://$HOST:$PORT..."
+    exec "$LLAMA_BIN" server \
+      --model "$MODEL_Q5" \
+      --n-gpu-layers 99 \
+      --ctx-size "$CTX_SIZE" \
+      --parallel 2 \
+      --cont-batching \
+      --batch-size 2048 \
+      --ubatch-size 1024 \
+      --spec-type draft-mtp \
+      --spec-draft-n-max 2 \
+      --cache-type-k q4_0 \
+      --cache-type-v q4_0 \
+      --flash-attn on \
+      --port "$PORT" \
+      --host "$HOST"
+else
+    echo "Starting Qwythos 9B (Q8_0 High-Precision Mode with MTP) on http://$HOST:$PORT..."
+    exec "$LLAMA_BIN" server \
+      --model "$MODEL_Q8" \
+      --n-gpu-layers 99 \
+      --ctx-size "$CTX_SIZE" \
+      --parallel 2 \
+      --cont-batching \
+      --batch-size 2048 \
+      --ubatch-size 1024 \
+      --spec-type draft-mtp \
+      --spec-draft-n-max 2 \
+      --cache-type-k q8_0 \
+      --cache-type-v q8_0 \
+      --flash-attn on \
+      --port "$PORT" \
+      --host "$HOST"
+fi

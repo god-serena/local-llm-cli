@@ -1,0 +1,78 @@
+#!/usr/bin/env bash
+# Unified launcher for selecting and executing local Qwen 3.8 / Qwythos subagent models
+#
+# Environment Variables:
+#   HARNESS_BIN      - Path to CLI agent harness binary (default: $HOME/.volta/bin/pi)
+#   LLAMA_MODELS_DIR - Directory containing GGUF model files (default: $HOME/llama-models)
+#   LLAMA_SERVER_URL - Llama server URL (default: http://localhost:8080)
+
+HARNESS_BIN="${HARNESS_BIN:-${PI_BIN:-$HOME/.volta/bin/pi}}"
+MODELS_DIR="${LLAMA_MODELS_DIR:-$HOME/llama-models}"
+SERVER_URL="${LLAMA_SERVER_URL:-http://localhost:8080}"
+
+usage() {
+    echo "Usage: qwen-select <model_alias> \"<prompt>\""
+    echo ""
+    echo "Available Model Aliases (Alphabetical):"
+    echo "  9b, emperio            -> Qwen 3.8 9B Distill (Q8_0)"
+    echo "  qwythos, q8            -> Qwythos 9B v2 MTP (Q8_0, High Accuracy)"
+    echo "  qwythos-fast, q5, fast -> Qwythos 9B v2 MTP (Q5_K_M, Fast Subagent Mode)"
+    echo "  swift, 27b-swift       -> Qwen 3.8 27B Swift (Q3_K_S)"
+    echo "  unsloth, 27b           -> Qwen 3.8 27B Unsloth (UD-IQ3_S)"
+    exit 1
+}
+
+if [ $# -lt 2 ]; then
+    usage
+fi
+
+MODEL_ALIAS="$1"
+shift
+PROMPT="$*"
+
+case "$MODEL_ALIAS" in
+    9b|emperio|qwen-9b-emperio)
+        MODEL_PATH="${MODELS_DIR}/Emperio_Qwen3.8-9B_Distill-Q8_0.gguf"
+        MODEL_ID="qwen-9b-emperio"
+        ;;
+    qwythos|9b-qwythos|qwen-9b-qwythos|q8)
+        MODEL_PATH="${MODELS_DIR}/Emperio_Qwythos-9B-v2-MTP-Q8_0.gguf"
+        MODEL_ID="qwythos"
+        ;;
+    qwythos-fast|fast|q5)
+        MODEL_PATH="${MODELS_DIR}/Emperio_Qwythos-9B-v2-MTP-Q5_K_M.gguf"
+        MODEL_ID="qwythos-fast"
+        ;;
+    swift|27b-swift|qwen-27b-swift)
+        MODEL_PATH="${MODELS_DIR}/Swift-Qwen3.8-27B-Q3_K_S.gguf"
+        MODEL_ID="qwen-27b-swift"
+        ;;
+    unsloth|27b|27b-unsloth|qwen-27b-unsloth)
+        MODEL_PATH="${MODELS_DIR}/Unsloth_Qwen3.8-27B-UD-IQ3_S.gguf"
+        MODEL_ID="qwen-27b-unsloth"
+        ;;
+    *)
+        echo "Error: Unknown model alias '$MODEL_ALIAS'"
+        usage
+        ;;
+esac
+
+if [ -x "$HARNESS_BIN" ]; then
+    "$HARNESS_BIN" --provider llama-cpp --model "$MODEL_ID" -p "$PROMPT" 2>/dev/null || {
+      curl -s "${SERVER_URL}/v1/chat/completions" \
+        -H "Content-Type: application/json" \
+        -d "{
+          \"model\": \"$MODEL_PATH\",
+          \"temperature\": 0.1,
+          \"messages\": [{\"role\": \"user\", \"content\": $(jq -n --arg p "$PROMPT" '$p')}]
+        }" | jq -r '.choices[0].message.content // .error.message'
+    }
+else
+    curl -s "${SERVER_URL}/v1/chat/completions" \
+      -H "Content-Type: application/json" \
+      -d "{
+        \"model\": \"$MODEL_PATH\",
+        \"temperature\": 0.1,
+        \"messages\": [{\"role\": \"user\", \"content\": $(jq -n --arg p "$PROMPT" '$p')}]
+      }" | jq -r '.choices[0].message.content // .error.message'
+fi

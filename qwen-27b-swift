@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# Run Qwen 3.8 27B Swift (Q3_K_S) via CLI agent harness or llama server
+HARNESS_BIN="${HARNESS_BIN:-${PI_BIN:-$HOME/.volta/bin/pi}}"
+SERVER_URL="${LLAMA_SERVER_URL:-http://localhost:8080}"
+MODELS_DIR="${LLAMA_MODELS_DIR:-$HOME/llama-models}"
+MODEL_PATH="${MODELS_DIR}/Swift-Qwen3.8-27B-Q3_K_S.gguf"
+MODEL_ID="qwen-27b-swift"
+
+if [ $# -eq 0 ]; then
+    echo "Usage: qwen-27b-swift \"Your prompt here\""
+    exit 1
+fi
+
+PROMPT="$*"
+
+if [ -x "$HARNESS_BIN" ]; then
+    "$HARNESS_BIN" --provider llama-cpp --model "$MODEL_ID" -p "$PROMPT" 2>/dev/null || {
+      curl -s "${SERVER_URL}/v1/chat/completions" \
+        -H "Content-Type: application/json" \
+        -d "{
+          \"model\": \"$MODEL_PATH\",
+          \"temperature\": 0.1,
+          \"messages\": [{\"role\": \"user\", \"content\": $(jq -n --arg p "$PROMPT" '$p')}]
+        }" | jq -r '.choices[0].message.content // .error.message'
+    }
+else
+    curl -s "${SERVER_URL}/v1/chat/completions" \
+      -H "Content-Type: application/json" \
+      -d "{
+        \"model\": \"$MODEL_PATH\",
+        \"temperature\": 0.1,
+        \"messages\": [{\"role\": \"user\", \"content\": $(jq -n --arg p "$PROMPT" '$p')}]
+      }" | jq -r '.choices[0].message.content // .error.message'
+fi
