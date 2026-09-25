@@ -33,7 +33,7 @@ Run the one-time setup script:
 Start `llama-server` for Qwythos 9B on `0.0.0.0:8080`:
 
 > **Network Configuration Note**:
-> Serving on host address `0.0.0.0` and port `8080` (all network interfaces) rather than loopback `127.0.0.1 (localhost)` ensures that Docker containers in local development environments can directly communicate with the host machine's local LLM server endpoint.
+> Serving on host address `0.0.0.0` (all network interfaces) rather than loopback `127.0.0.1 (localhost)` ensures that Docker containers in local development environments can directly communicate with the host machine's local LLM server endpoint.
 
 ```bash
 serve-qwythos
