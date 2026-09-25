@@ -1,9 +1,6 @@
 # Personal Local LLM CLI Suite
 
-> **Personal Setup & Configuration Notice**
 > This repository contains personal local LLM execution tools, model launchers, and subagent wrapper scripts tailored specifically for my workstation environment (`$HOME/local-llm-cli`, `$HOME/llama-models`). It is publicly visible for personal reference and tracking.
-
-A personal suite of lightweight CLI tools and server launchers for managing and executing local LLM models.
 
 ---
 
@@ -22,13 +19,7 @@ All scripts support custom environment variable overrides with default fallback 
 
 ## Personal Setup & Deployment
 
-Add the repository folder directly to your shell `PATH` in `~/.bashrc` or `~/.zshrc`:
-
-```bash
-export PATH="$HOME/local-llm-cli:$PATH"
-```
-
-Or run the one-time setup script:
+Run the one-time setup script:
 
 ```bash
 ./install.sh
@@ -40,6 +31,9 @@ Or run the one-time setup script:
 
 ### 1. `serve-qwythos` (Llama Server Launcher)
 Start `llama-server` for Qwythos 9B on `0.0.0.0:8080`:
+
+> **Network Configuration Note**:
+> Serving on host address `0.0.0.0` and port `8080` (all network interfaces) rather than loopback `127.0.0.1 (localhost)` ensures that Docker containers in local development environments can directly communicate with the host machine's local LLM server endpoint.
 
 ```bash
 serve-qwythos
@@ -54,7 +48,6 @@ Execute coding and reasoning sub-tasks directly from terminal or local wrappers:
 ```bash
 qwythos-fast "Write a unit test for backend/app/llm.py"
 
-# Execute with precision mode
 qwythos "Deconstruct the Japanese grammar in this sentence..."
 ```
 
