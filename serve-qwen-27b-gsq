@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+# Qwen 3.8 27B GSQ-RCO Llama Server Launcher
+# Serves local Qwen 3.8 27B GSQ-RCO (IQ3_XXS MTP) on http://0.0.0.0:8080
+#
+# Environment Variables (with sensible defaults):
+#   LLAMA_BIN        - Path to llama binary (default: $HOME/.local/bin/llama)
+#   LLAMA_MODELS_DIR - Path to GGUF models folder (default: $HOME/llama-models)
+#   LLAMA_PORT       - Server port (default: 8080)
+#   LLAMA_HOST       - Server host IP (default: 0.0.0.0)
+
+LLAMA_BIN="${LLAMA_BIN:-$HOME/.local/bin/llama}"
+MODELS_DIR="${LLAMA_MODELS_DIR:-$HOME/llama-models}"
+MODEL_PATH="${MODELS_DIR}/ISTA-DASLab_Qwen3.8-27B-GSQ-RCO-IQ3_XXS-mtp.gguf"
+
+PORT="${LLAMA_PORT:-8080}"
+HOST="${LLAMA_HOST:-0.0.0.0}"
+CTX_SIZE="32768"
+PARALLEL="1"
+
+usage() {
+    echo "Usage: serve-qwen-27b-gsq [--port 8080] [--ctx 32768] [--parallel 1]"
+    exit "${1:-1}"
+}
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --port)
+            PORT="$2"
+            shift 2
+            ;;
+        --ctx)
+            CTX_SIZE="$2"
+            shift 2
+            ;;
+        --parallel)
+            PARALLEL="$2"
+            shift 2
+            ;;
+        -h|--help)
+            usage 0
+            ;;
+        *)
+            usage
+            ;;
+    esac
+done
+
+echo "Starting Qwen 3.8 27B GSQ-RCO (IQ3_XXS MTP) on http://$HOST:$PORT..."
+exec "$LLAMA_BIN" server \
+  --model "$MODEL_PATH" \
+  --n-gpu-layers 99 \
+  --ctx-size "$CTX_SIZE" \
+  --parallel "$PARALLEL" \
+  --cont-batching \
+  --batch-size 2048 \
+  --ubatch-size 1024 \
+  --spec-type draft-mtp \
+  --spec-draft-n-max 2 \
+  --cache-type-k q4_0 \
+  --cache-type-v q4_0 \
+  --flash-attn on \
+  --port "$PORT" \
+  --host "$HOST"

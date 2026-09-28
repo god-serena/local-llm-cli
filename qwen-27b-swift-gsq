@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Run Qwen 3.8 27B Swift (Q3_K_S) via CLI agent harness or llama server
+# Run Swift 1.5 Qwen 3.8 27B GSQ-RCO (IQ3_XXS MTP) via CLI agent harness or llama server
 HARNESS_BIN="${HARNESS_BIN:-${PI_BIN:-$HOME/.volta/bin/pi}}"
 SERVER_URL="${LLAMA_SERVER_URL:-http://localhost:8080}"
 MODELS_DIR="${LLAMA_MODELS_DIR:-$HOME/llama-models}"
-MODEL_PATH="${MODELS_DIR}/Swift-Qwen3.8-27B-Q3_K_S.gguf"
-MODEL_ID="qwen-27b-swift"
+MODEL_PATH="${MODELS_DIR}/Swift-1.5-Qwen3.8-27B-GSQ-RCO-IQ3_XXS-mtp.gguf"
+MODEL_ID="qwen-27b-swift-gsq"
 
 SYSTEM_PROMPT=""
 PROMPT=""
@@ -16,8 +16,8 @@ while [[ $# -gt 0 ]]; do
       shift 2
       ;;
     -h|--help)
-      echo "Usage: qwen-27b-swift [-s \"<system_prompt>\"] \"<prompt>\""
-      echo "       echo \"<prompt>\" | qwen-27b-swift"
+      echo "Usage: qwen-27b-swift-gsq [-s \"<system_prompt>\"] \"<prompt>\""
+      echo "       echo \"<prompt>\" | qwen-27b-swift-gsq"
       exit 0
       ;;
     *)
@@ -36,7 +36,7 @@ if [ -z "$PROMPT" ] && [ ! -t 0 ]; then
 fi
 
 if [ -z "$PROMPT" ]; then
-  echo "Usage: qwen-27b-swift [-s \"<system_prompt>\"] \"<prompt>\""
+  echo "Usage: qwen-27b-swift-gsq [-s \"<system_prompt>\"] \"<prompt>\""
   exit 1
 fi
 

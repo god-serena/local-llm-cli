@@ -1,0 +1,83 @@
+#!/usr/bin/env bash
+# Swift-Qwen 3.8 27B (Q3_K_S) Llama Server Launcher
+# Serves local Swift-Qwen3.8-27B-Q3_K_S.gguf on http://0.0.0.0:8080
+#
+# Environment Variables (with sensible defaults):
+#   LLAMA_BIN        - Path to llama binary (default: $HOME/.local/bin/llama)
+#   LLAMA_MODELS_DIR - Path to GGUF models folder (default: $HOME/llama-models)
+#   LLAMA_PORT       - Server port (default: 8080)
+#   LLAMA_HOST       - Server host IP (default: 0.0.0.0)
+
+LLAMA_BIN="${LLAMA_BIN:-$HOME/.local/bin/llama}"
+MODELS_DIR="${LLAMA_MODELS_DIR:-$HOME/llama-models}"
+MODEL_PATH="${MODELS_DIR}/Swift-Qwen3.8-27B-Q3_K_S.gguf"
+
+MODE="mtp"
+PORT="${LLAMA_PORT:-8080}"
+HOST="${LLAMA_HOST:-0.0.0.0}"
+CTX_SIZE="32768"
+PARALLEL="1"
+
+usage() {
+    echo "Usage: serve-qwen-27b-swift [mtp|nomtp] [--port 8080] [--ctx 32768] [--parallel 1]"
+    echo ""
+    echo "Options:"
+    echo "  mtp (default) -> Built-in MTP speculative decoding"
+    echo "  nomtp         -> Standard generation without speculative decoding"
+    echo ""
+    exit "${1:-1}"
+}
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        mtp|fast)
+            MODE="mtp"
+            shift
+            ;;
+        nomtp|no-mtp|standard)
+            MODE="nomtp"
+            shift
+            ;;
+        --port)
+            PORT="$2"
+            shift 2
+            ;;
+        --ctx)
+            CTX_SIZE="$2"
+            shift 2
+            ;;
+        --parallel)
+            PARALLEL="$2"
+            shift 2
+            ;;
+        -h|--help)
+            usage 0
+            ;;
+        *)
+            usage
+            ;;
+    esac
+done
+
+if [ "$MODE" = "mtp" ]; then
+    SPEC_ARGS=(--spec-type draft-mtp --spec-draft-n-max 3)
+    echo "Starting Swift-Qwen 3.8 27B (Q3_K_S with MTP) on http://$HOST:$PORT..."
+else
+    SPEC_ARGS=()
+    echo "Starting Swift-Qwen 3.8 27B (Q3_K_S Standard) on http://$HOST:$PORT..."
+fi
+
+exec "$LLAMA_BIN" server \
+  --model "$MODEL_PATH" \
+  --n-gpu-layers 99 \
+  --ctx-size "$CTX_SIZE" \
+  --parallel "$PARALLEL" \
+  --cont-batching \
+  --batch-size 2048 \
+  --ubatch-size 1024 \
+  "${SPEC_ARGS[@]}" \
+  --cache-type-k q4_0 \
+  --cache-type-v q4_0 \
+  --flash-attn on \
+  --port "$PORT" \
+  --host "$HOST"
