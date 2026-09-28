@@ -13,6 +13,7 @@ MODELS_DIR="${LLAMA_MODELS_DIR:-$HOME/llama-models}"
 
 MODEL_Q5="${MODELS_DIR}/Emperio_Qwythos-9B-v2-MTP-Q5_K_M.gguf"
 MODEL_Q8="${MODELS_DIR}/Emperio_Qwythos-9B-v2-MTP-Q8_0.gguf"
+MMPROJ_PATH="${MODELS_DIR}/mmproj-Qwythos-9B-Claude-Mythos-5-1M-F16.gguf"
 
 MODE="q5"
 PORT="${LLAMA_PORT:-8080}"
@@ -23,8 +24,8 @@ usage() {
     echo "Usage: serve-qwythos [q5|q8|fast|precision] [--port 8080] [--ctx 32768]"
     echo ""
     echo "Modes:"
-    echo "  q5, fast (default) -> Q5_K_M model (Parallel 2, ubatch 1024, MTP draft-mtp)"
-    echo "  q8, precision      -> Q8_0 model   (Parallel 2, ubatch 1024, MTP draft-mtp)"
+    echo "  q5, fast (default) -> Q5_K_M model (Parallel 2, ubatch 2048, MTP draft-mtp)"
+    echo "  q8, precision      -> Q8_0 model   (Parallel 2, ubatch 2048, MTP draft-mtp, q4_0 KV cache)"
     echo ""
     exit 1
 }
@@ -66,8 +67,14 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+EXTRA_ARGS=()
+if [ -f "$MMPROJ_PATH" ]; then
+    echo "Multimodal Vision Projector detected: $MMPROJ_PATH"
+    EXTRA_ARGS+=(--mmproj "$MMPROJ_PATH")
+fi
+
 if [ "$MODE" = "q5" ]; then
-    echo "Starting Qwythos 9B (Q5_K_M Fast Subagent Mode with MTP) on http://$HOST:$PORT..."
+    echo "Starting Qwythos 9B (Q5_K_M Fast Subagent Mode with Tuned MTP) on http://$HOST:$PORT..."
     exec "$LLAMA_BIN" server \
       --model "$MODEL_Q5" \
       --n-gpu-layers 99 \
@@ -75,16 +82,21 @@ if [ "$MODE" = "q5" ]; then
       --parallel 2 \
       --cont-batching \
       --batch-size 2048 \
-      --ubatch-size 1024 \
+      --ubatch-size 2048 \
       --spec-type draft-mtp \
-      --spec-draft-n-max 2 \
+      --spec-draft-n-max 3 \
+      --spec-draft-p-min 0.05 \
+      --spec-draft-p-split 0.05 \
       --cache-type-k q4_0 \
       --cache-type-v q4_0 \
+      --cache-type-k-draft q4_0 \
+      --cache-type-v-draft q4_0 \
       --flash-attn on \
+      "${EXTRA_ARGS[@]}" \
       --port "$PORT" \
       --host "$HOST"
 else
-    echo "Starting Qwythos 9B (Q8_0 High-Precision Mode with MTP) on http://$HOST:$PORT..."
+    echo "Starting Qwythos 9B (Q8_0 High-Precision Mode with Tuned MTP) on http://$HOST:$PORT..."
     exec "$LLAMA_BIN" server \
       --model "$MODEL_Q8" \
       --n-gpu-layers 99 \
@@ -92,12 +104,17 @@ else
       --parallel 2 \
       --cont-batching \
       --batch-size 2048 \
-      --ubatch-size 1024 \
+      --ubatch-size 2048 \
       --spec-type draft-mtp \
-      --spec-draft-n-max 2 \
-      --cache-type-k q8_0 \
-      --cache-type-v q8_0 \
+      --spec-draft-n-max 3 \
+      --spec-draft-p-min 0.05 \
+      --spec-draft-p-split 0.05 \
+      --cache-type-k q4_0 \
+      --cache-type-v q4_0 \
+      --cache-type-k-draft q4_0 \
+      --cache-type-v-draft q4_0 \
       --flash-attn on \
+      "${EXTRA_ARGS[@]}" \
       --port "$PORT" \
       --host "$HOST"
 fi
