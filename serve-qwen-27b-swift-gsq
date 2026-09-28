@@ -60,8 +60,15 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [ "$MODE" = "mtp" ]; then
-    SPEC_ARGS=(--spec-type draft-mtp --spec-draft-n-max 3)
-    echo "Starting Swift 1.5 Qwen 3.8 27B GSQ-RCO (IQ3_XXS with MTP) on http://$HOST:$PORT..."
+    SPEC_ARGS=(
+        --spec-type draft-mtp
+        --spec-draft-n-max 3
+        --spec-draft-p-min 0.05
+        --spec-draft-p-split 0.05
+        --cache-type-k-draft q4_0
+        --cache-type-v-draft q4_0
+    )
+    echo "Starting Swift 1.5 Qwen 3.8 27B GSQ-RCO (IQ3_XXS with Tuned MTP) on http://$HOST:$PORT..."
 else
     SPEC_ARGS=()
     echo "Starting Swift 1.5 Qwen 3.8 27B GSQ-RCO (IQ3_XXS Standard) on http://$HOST:$PORT..."
@@ -74,7 +81,7 @@ exec "$LLAMA_BIN" server \
   --parallel "$PARALLEL" \
   --cont-batching \
   --batch-size 2048 \
-  --ubatch-size 1024 \
+  --ubatch-size 2048 \
   "${SPEC_ARGS[@]}" \
   --cache-type-k q4_0 \
   --cache-type-v q4_0 \

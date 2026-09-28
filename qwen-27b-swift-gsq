@@ -55,7 +55,7 @@ if [ -x "$HARNESS_BIN" ]; then
         -H "Content-Type: application/json" \
         -d "{
           \"model\": \"$MODEL_PATH\",
-          \"temperature\": 0.1,
+          \"temperature\": 0.0,
           \"messages\": $MESSAGES
         }" | jq -r '.choices[0].message.content // .error.message'
     }
@@ -69,7 +69,7 @@ else
       -H "Content-Type: application/json" \
       -d "{
         \"model\": \"$MODEL_PATH\",
-        \"temperature\": 0.1,
+        \"temperature\": 0.0,
         \"messages\": $MESSAGES
       }" | jq -r '.choices[0].message.content // .error.message'
 fi
