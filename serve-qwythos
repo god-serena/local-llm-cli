@@ -92,6 +92,7 @@ if [ "$MODE" = "q5" ]; then
       --cache-type-k-draft q4_0 \
       --cache-type-v-draft q4_0 \
       --flash-attn on \
+      --metrics \
       "${EXTRA_ARGS[@]}" \
       --port "$PORT" \
       --host "$HOST"
@@ -114,6 +115,7 @@ else
       --cache-type-k-draft q4_0 \
       --cache-type-v-draft q4_0 \
       --flash-attn on \
+      --metrics \
       "${EXTRA_ARGS[@]}" \
       --port "$PORT" \
       --host "$HOST"

@@ -31,9 +31,12 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-if [ -z "$PROMPT" ] && [ ! -t 0 ]; then
+if [ -z "$PROMPT" ] && [ ! -t 0 ] && read -t 0; then
   PROMPT=$(cat)
 fi
+
+# Ensure non-interactive execution: redirect stdin to /dev/null so neither the script nor subcommands can wait for input
+exec < /dev/null
 
 if [ -z "$PROMPT" ]; then
   echo "Usage: qwen-27b-swift [-s \"<system_prompt>\"] \"<prompt>\""
@@ -45,31 +48,19 @@ if [ -x "$HARNESS_BIN" ]; then
     if [ -n "$SYSTEM_PROMPT" ]; then
         EXTRA_HARNESS_ARGS+=(--system "$SYSTEM_PROMPT")
     fi
-    "$HARNESS_BIN" --provider llama-cpp --model "$MODEL_ID" "${EXTRA_HARNESS_ARGS[@]}" -p "$PROMPT" 2>/dev/null || {
-      if [ -n "$SYSTEM_PROMPT" ]; then
-          MESSAGES="[{\"role\": \"system\", \"content\": $(jq -n --arg s "$SYSTEM_PROMPT" '$s')}, {\"role\": \"user\", \"content\": $(jq -n --arg p "$PROMPT" '$p')}]"
-      else
-          MESSAGES="[{\"role\": \"user\", \"content\": $(jq -n --arg p "$PROMPT" '$p')}]"
-      fi
-      curl -s "${SERVER_URL}/v1/chat/completions" \
-        -H "Content-Type: application/json" \
-        -d "{
-          \"model\": \"$MODEL_PATH\",
-          \"temperature\": 0.1,
-          \"messages\": $MESSAGES
-        }" | jq -r '.choices[0].message.content // .error.message'
-    }
-else
-    if [ -n "$SYSTEM_PROMPT" ]; then
-        MESSAGES="[{\"role\": \"system\", \"content\": $(jq -n --arg s "$SYSTEM_PROMPT" '$s')}, {\"role\": \"user\", \"content\": $(jq -n --arg p "$PROMPT" '$p')}]"
-    else
-        MESSAGES="[{\"role\": \"user\", \"content\": $(jq -n --arg p "$PROMPT" '$p')}]"
-    fi
-    curl -s "${SERVER_URL}/v1/chat/completions" \
-      -H "Content-Type: application/json" \
-      -d "{
-        \"model\": \"$MODEL_PATH\",
-        \"temperature\": 0.1,
-        \"messages\": $MESSAGES
-      }" | jq -r '.choices[0].message.content // .error.message'
+    "$HARNESS_BIN" --provider llama-cpp --model "$MODEL_ID" "${EXTRA_HARNESS_ARGS[@]}" -p "$PROMPT" < /dev/null 2>/dev/null && exit 0
 fi
+
+if [ -n "$SYSTEM_PROMPT" ]; then
+    MESSAGES="[{\"role\": \"system\", \"content\": $(jq -n --arg s "$SYSTEM_PROMPT" '$s')}, {\"role\": \"user\", \"content\": $(jq -n --arg p "$PROMPT" '$p')}]"
+else
+    MESSAGES="[{\"role\": \"user\", \"content\": $(jq -n --arg p "$PROMPT" '$p')}]"
+fi
+
+curl -s "${SERVER_URL}/v1/chat/completions" \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"model\": \"$MODEL_PATH\",
+    \"temperature\": 0.1,
+    \"messages\": $MESSAGES
+  }" | jq -r '.choices[0].message.content // .error.message'

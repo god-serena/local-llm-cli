@@ -30,6 +30,9 @@ MODEL_ALIAS="$1"
 shift
 PROMPT="$*"
 
+# Ensure non-interactive execution: redirect stdin to /dev/null so neither the script nor subcommands can wait for input
+exec < /dev/null
+
 case "$MODEL_ALIAS" in
     gsq|27b-gsq|qwen-27b-gsq|gsq-mtp|27b-gsq-mtp)
         MODEL_PATH="${MODELS_DIR}/ISTA-DASLab_Qwen3.8-27B-GSQ-RCO-IQ3_XXS-mtp.gguf"
@@ -58,21 +61,13 @@ case "$MODEL_ALIAS" in
 esac
 
 if [ -x "$HARNESS_BIN" ]; then
-    "$HARNESS_BIN" --provider llama-cpp --model "$MODEL_ID" -p "$PROMPT" 2>/dev/null || {
-      curl -s "${SERVER_URL}/v1/chat/completions" \
-        -H "Content-Type: application/json" \
-        -d "{
-          \"model\": \"$MODEL_PATH\",
-          \"temperature\": 0.1,
-          \"messages\": [{\"role\": \"user\", \"content\": $(jq -n --arg p "$PROMPT" '$p')}]
-        }" | jq -r '.choices[0].message.content // .error.message'
-    }
-else
-    curl -s "${SERVER_URL}/v1/chat/completions" \
-      -H "Content-Type: application/json" \
-      -d "{
-        \"model\": \"$MODEL_PATH\",
-        \"temperature\": 0.1,
-        \"messages\": [{\"role\": \"user\", \"content\": $(jq -n --arg p "$PROMPT" '$p')}]
-      }" | jq -r '.choices[0].message.content // .error.message'
+    "$HARNESS_BIN" --provider llama-cpp --model "$MODEL_ID" -p "$PROMPT" < /dev/null 2>/dev/null && exit 0
 fi
+
+curl -s "${SERVER_URL}/v1/chat/completions" \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"model\": \"$MODEL_PATH\",
+    \"temperature\": 0.1,
+    \"messages\": [{\"role\": \"user\", \"content\": $(jq -n --arg p "$PROMPT" '$p')}]
+  }" | jq -r '.choices[0].message.content // .error.message'

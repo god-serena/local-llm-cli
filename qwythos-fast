@@ -34,9 +34,12 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-if [ -z "$PROMPT" ] && [ ! -t 0 ]; then
+if [ -z "$PROMPT" ] && [ ! -t 0 ] && read -t 0; then
   PROMPT=$(cat)
 fi
+
+# Ensure non-interactive execution: redirect stdin to /dev/null so neither the script nor subcommands can wait for input
+exec < /dev/null
 
 if [ -z "$PROMPT" ]; then
   echo "Usage: qwythos-fast [-s \"<system_prompt>\"] \"<prompt>\""
@@ -44,27 +47,16 @@ if [ -z "$PROMPT" ]; then
 fi
 
 if [ -x "$HARNESS_BIN" ]; then
-    "$HARNESS_BIN" --provider llama-cpp --model "qwythos-fast" --system "$SYSTEM_PROMPT" -p "$PROMPT" 2>/dev/null || {
-      curl -s "${SERVER_URL}/v1/chat/completions" \
-        -H "Content-Type: application/json" \
-        -d "{
-          \"model\": \"$MODEL_PATH\",
-          \"temperature\": 0.1,
-          \"messages\": [
-            {\"role\": \"system\", \"content\": $(jq -n --arg s "$SYSTEM_PROMPT" '$s')},
-            {\"role\": \"user\", \"content\": $(jq -n --arg p "$PROMPT" '$p')}
-          ]
-        }" | jq -r '.choices[0].message.content // .error.message'
-    }
-else
-    curl -s "${SERVER_URL}/v1/chat/completions" \
-      -H "Content-Type: application/json" \
-      -d "{
-        \"model\": \"$MODEL_PATH\",
-        \"temperature\": 0.1,
-        \"messages\": [
-          {\"role\": \"system\", \"content\": $(jq -n --arg s "$SYSTEM_PROMPT" '$s')},
-          {\"role\": \"user\", \"content\": $(jq -n --arg p "$PROMPT" '$p')}
-        ]
-      }" | jq -r '.choices[0].message.content // .error.message'
+    "$HARNESS_BIN" --provider llama-cpp --model "qwythos-fast" --system "$SYSTEM_PROMPT" -p "$PROMPT" < /dev/null 2>/dev/null && exit 0
 fi
+
+curl -s "${SERVER_URL}/v1/chat/completions" \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"model\": \"$MODEL_PATH\",
+    \"temperature\": 0.1,
+    \"messages\": [
+      {\"role\": \"system\", \"content\": $(jq -n --arg s "$SYSTEM_PROMPT" '$s')},
+      {\"role\": \"user\", \"content\": $(jq -n --arg p "$PROMPT" '$p')}
+    ]
+  }" | jq -r '.choices[0].message.content // .error.message'

@@ -33,6 +33,9 @@ Run the one-time setup script:
 
 > **Network Configuration Note**:
 > Serving on host address `0.0.0.0` (all network interfaces) rather than loopback `127.0.0.1 (localhost)` ensures that Docker containers in local development environments can directly communicate with the host machine's local LLM server endpoint.
+>
+> **Metrics & Observability**:
+> All server launchers include `--metrics` enabled by default, exposing Prometheus-compatible performance metrics at `http://<host>:<port>/metrics` (e.g. `http://localhost:8080/metrics`).
 
 #### `serve-qwythos` (Qwythos 9B v2 MTP)
 Start `llama-server` for Qwythos 9B on `0.0.0.0:8080`:

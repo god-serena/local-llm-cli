@@ -59,5 +59,6 @@ exec "$LLAMA_BIN" server \
   --cache-type-k q4_0 \
   --cache-type-v q4_0 \
   --flash-attn on \
+  --metrics \
   --port "$PORT" \
   --host "$HOST"
