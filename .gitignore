@@ -8,3 +8,6 @@
 # Local model weights or temp logs
 *.gguf
 *.log
+
+# Personal benchmark data (local-only)
+BENCHMARK_REPORT.md
