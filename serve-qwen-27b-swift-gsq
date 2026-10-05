@@ -24,7 +24,7 @@ usage() {
     echo "Options:"
     echo "  mtp (default) -> Built-in MTP speculative decoding"
     echo "  nomtp         -> Standard generation without speculative decoding"
-    echo "  --max-ctx     -> Use native maximum model context ceiling (262,144 / 256k)"
+    echo "  --max-ctx     -> Use safe high-context ceiling (65,536 / 64k, 100% GPU VRAM safe)"
     echo ""
     exit "${1:-1}"
 }
@@ -48,7 +48,7 @@ while [[ $# -gt 0 ]]; do
             shift 2
             ;;
         --max-ctx|--max-context|max-ctx)
-            CTX_SIZE="262144"
+            CTX_SIZE="65536"
             shift
             ;;
         --parallel)
