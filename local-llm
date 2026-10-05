@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+# Unified Local LLM Client Launcher
+# Dispatches prompts to the active local llama-server via pi harness or direct HTTP
+
+HARNESS_BIN="${HARNESS_BIN:-${PI_BIN:-$HOME/.volta/bin/pi}}"
+SERVER_URL="${LLAMA_SERVER_URL:-http://localhost:8080}"
+DEFAULT_SYSTEM="You are a helpful and expert AI assistant. Provide concise, accurate technical solutions."
+
+SYSTEM_PROMPT=""
+PROMPT=""
+
+# Non-blocking pipe input check
+if [ ! -t 0 ] && read -t 0; then
+  PROMPT=$(cat)
+fi
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -s|--system)
+      SYSTEM_PROMPT="$2"
+      shift 2
+      ;;
+    --info)
+      exec < /dev/null
+      echo "Querying active model from ${SERVER_URL}/v1/models..."
+      curl -s "${SERVER_URL}/v1/models" | jq -r '.data[0].id // .models[0].name // "No model currently active"'
+      exit 0
+      ;;
+    -h|--help)
+      echo "Usage: local-llm [-s \"<system_prompt>\"] \"<prompt>\""
+      echo "       echo \"<prompt>\" | local-llm"
+      echo "       local-llm --info"
+      exit 0
+      ;;
+    *)
+      if [ -z "$PROMPT" ]; then
+        PROMPT="$1"
+      else
+        PROMPT="$PROMPT $1"
+      fi
+      shift
+      ;;
+  esac
+done
+
+# Ensure non-interactive execution: redirect stdin to /dev/null so neither the script nor subcommands can wait for input
+exec < /dev/null
+
+if [ -z "$PROMPT" ]; then
+  echo "Usage: local-llm [-s \"<system_prompt>\"] \"<prompt>\""
+  exit 1
+fi
+
+[ -z "$SYSTEM_PROMPT" ] && SYSTEM_PROMPT="$DEFAULT_SYSTEM"
+
+# 1. Attempt execution via Pi agent harness with generic 'local' model ID
+if [ -x "$HARNESS_BIN" ]; then
+  "$HARNESS_BIN" --provider llama-cpp --model "local" --system "$SYSTEM_PROMPT" -p "$PROMPT" < /dev/null 2>/dev/null && exit 0
+fi
+
+# 2. Fallback: Direct HTTP call to llama-server (model omitted)
+MESSAGES="[{\"role\": \"system\", \"content\": $(jq -n --arg s "$SYSTEM_PROMPT" '$s')}, {\"role\": \"user\", \"content\": $(jq -n --arg p "$PROMPT" '$p')}]"
+
+curl -s "${SERVER_URL}/v1/chat/completions" \
+  -H "Content-Type: application/json" \
+  -d "{
+    \"temperature\": 0.1,
+    \"messages\": $MESSAGES
+  }" | jq -r '.choices[0].message.content // .error.message'

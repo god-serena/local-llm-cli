@@ -47,13 +47,6 @@ serve-qwythos
 serve-qwythos q8
 ```
 
-#### `serve-qwen-27b-gsq` (Qwen 3.8 27B GSQ-RCO IQ3_XXS MTP)
-Start `llama-server` for Qwen 3.8 27B GSQ-RCO with speculative decoding:
-
-```bash
-serve-qwen-27b-gsq
-```
-
 #### `serve-qwen-27b-swift` (Swift-Qwen 3.8 27B Q3_K_S)
 Start `llama-server` for Swift-Qwen 3.8 27B (Q3_K_S) on `0.0.0.0:8080`:
 
@@ -76,46 +69,27 @@ serve-qwen-27b-swift-gsq nomtp
 
 ---
 
-### 2. Subagent & Model Execution
+### 2. Unified Client Execution (`local-llm`)
 
-Execute coding and reasoning sub-tasks directly from terminal or local wrappers:
+Execute prompts directly against whichever model is currently active in `llama-server` on `localhost:8080`. The client dispatches via the `pi` agent harness (using the generic `local` model ID) and automatically falls back to direct HTTP completions.
 
-#### `qwythos-fast` & `qwythos`
 ```bash
-# Fast subagent mode (Q5_K_M)
-qwythos-fast "Write a unit test for backend/app/llm.py"
+# Standard command-line prompt
+local-llm "Explain speculative decoding in one sentence"
 
-# High-precision mode (Q8_0)
-qwythos "Deconstruct the Japanese grammar in this sentence..."
-```
+# Piped / non-interactive execution
+cat query.sql | local-llm
 
-#### `qwen-27b-gsq`
-```bash
-# Execute with task-lossless GSQ-RCO 27B (IQ3_XXS MTP)
-qwen-27b-gsq "Implement a high-performance LRU cache in Rust"
-```
+# Custom system instructions
+local-llm -s "You are a compiler engineer" "Explain loop invariant code motion"
 
-#### `qwen-27b-swift`
-```bash
-# Execute with Swift Qwen 3.8 27B (Q3_K_S)
-qwen-27b-swift "Optimize this SQL query plan"
-```
-
-#### `qwen-27b-swift-gsq`
-```bash
-# Execute with Swift 1.5 Qwen 3.8 27B GSQ-RCO (IQ3_XXS MTP)
-qwen-27b-swift-gsq "Analyze this code structure"
+# Inspect currently loaded model on port 8080
+local-llm --info
 ```
 
 ---
 
-### 3. `qwen-select` (Unified Multi-Model Selector)
-Select and execute any model alias on demand:
+### 3. Agent Bridge Integration
 
-```bash
-qwen-select fast "Refactor this function"
-qwen-select q8 "Explain this complex algorithm"
-qwen-select gsq "Analyze this system architecture"
-qwen-select swift "Generate complex schema"
-qwen-select swift-gsq "Draft a prompt template"
-```
+The subagent registered under `~/.gemini/config/agents/` delegates local pair programming tasks:
+- **`@local_llm`**: Primary unified subagent routing directly to the active `llama-server` via `local-llm`.
