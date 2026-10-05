@@ -27,7 +27,7 @@ usage() {
     echo "Modes:"
     echo "  q5, fast (default) -> Q5_K_M model (Parallel 1, ubatch 2048, MTP draft-mtp)"
     echo "  q8, precision      -> Q8_0 model   (Parallel 1, ubatch 2048, MTP draft-mtp, K8V4 KV cache)"
-    echo "  --max-ctx          -> Use efficient high-context ceiling (131,072 / 128k)"
+    echo "  --max-ctx          -> Use full 256k context ceiling (262,144 / 256k)"
     echo ""
     exit 1
 }
@@ -65,7 +65,7 @@ while [[ $# -gt 0 ]]; do
             shift 2
             ;;
         --max-ctx|--max-context|max-ctx)
-            CTX_SIZE="131072"
+            CTX_SIZE="262144"
             shift
             ;;
         -h|--help)
