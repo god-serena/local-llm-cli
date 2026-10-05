@@ -74,7 +74,7 @@ if [ -f "$MMPROJ_PATH" ]; then
 fi
 
 if [ "$MODE" = "q5" ]; then
-    echo "Starting Qwythos 9B (Q5_K_M Fast Subagent Mode with Tuned MTP) on http://$HOST:$PORT..."
+    echo "Starting Qwythos 9B (Q5_K_M Fast Subagent Mode with Hybrid MTP + Prompt-Lookup) on http://$HOST:$PORT..."
     exec "$LLAMA_BIN" server \
       --model "$MODEL_Q5" \
       --n-gpu-layers 99 \
@@ -83,11 +83,11 @@ if [ "$MODE" = "q5" ]; then
       --cont-batching \
       --batch-size 2048 \
       --ubatch-size 2048 \
-      --spec-type draft-mtp \
+      --spec-type draft-mtp,ngram-simple \
       --spec-draft-n-max 3 \
       --spec-draft-p-min 0.05 \
       --spec-draft-p-split 0.05 \
-      --cache-type-k q4_0 \
+      --cache-type-k q8_0 \
       --cache-type-v q4_0 \
       --cache-type-k-draft q4_0 \
       --cache-type-v-draft q4_0 \
@@ -97,7 +97,7 @@ if [ "$MODE" = "q5" ]; then
       --port "$PORT" \
       --host "$HOST"
 else
-    echo "Starting Qwythos 9B (Q8_0 High-Precision Mode with Tuned MTP) on http://$HOST:$PORT..."
+    echo "Starting Qwythos 9B (Q8_0 High-Precision Mode with Hybrid MTP + Prompt-Lookup) on http://$HOST:$PORT..."
     exec "$LLAMA_BIN" server \
       --model "$MODEL_Q8" \
       --n-gpu-layers 99 \
@@ -106,11 +106,11 @@ else
       --cont-batching \
       --batch-size 2048 \
       --ubatch-size 2048 \
-      --spec-type draft-mtp \
+      --spec-type draft-mtp,ngram-simple \
       --spec-draft-n-max 3 \
       --spec-draft-p-min 0.05 \
       --spec-draft-p-split 0.05 \
-      --cache-type-k q4_0 \
+      --cache-type-k q8_0 \
       --cache-type-v q4_0 \
       --cache-type-k-draft q4_0 \
       --cache-type-v-draft q4_0 \
