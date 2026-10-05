@@ -55,7 +55,11 @@ fi
 
 # 1. Attempt execution via Pi agent harness with generic 'local' model ID
 if [ -x "$HARNESS_BIN" ]; then
-  "$HARNESS_BIN" --provider llama-cpp --model "local" --system "$SYSTEM_PROMPT" -p "$PROMPT" < /dev/null 2>/dev/null && exit 0
+  EXTRA_HARNESS_ARGS=()
+  if [ -n "$SYSTEM_PROMPT" ]; then
+    EXTRA_HARNESS_ARGS+=(--append-system-prompt "$SYSTEM_PROMPT")
+  fi
+  "$HARNESS_BIN" --provider llama-cpp --model "local" "${EXTRA_HARNESS_ARGS[@]}" -p "$PROMPT" < /dev/null 2>/dev/null && exit 0
 fi
 
 # 2. Fallback: Direct HTTP call to llama-server (model omitted)
