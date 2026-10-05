@@ -19,14 +19,15 @@ MODE="q5"
 PORT="${LLAMA_PORT:-8080}"
 HOST="${LLAMA_HOST:-0.0.0.0}"
 CTX_SIZE="32768"
+PARALLEL="1"
 
 usage() {
-    echo "Usage: serve-qwythos [q5|q8|fast|precision] [--max-ctx] [--port 8080] [--ctx 32768]"
+    echo "Usage: serve-qwythos [q5|q8|fast|precision] [--max-ctx] [--port 8080] [--ctx 32768] [--parallel 1]"
     echo ""
     echo "Modes:"
-    echo "  q5, fast (default) -> Q5_K_M model (Parallel 2, ubatch 2048, MTP draft-mtp)"
-    echo "  q8, precision      -> Q8_0 model   (Parallel 2, ubatch 2048, MTP draft-mtp, K8V4 KV cache)"
-    echo "  --max-ctx          -> Use safe high-context ceiling (131,072 / 2 slots x 64k)"
+    echo "  q5, fast (default) -> Q5_K_M model (Parallel 1, ubatch 2048, MTP draft-mtp)"
+    echo "  q8, precision      -> Q8_0 model   (Parallel 1, ubatch 2048, MTP draft-mtp, K8V4 KV cache)"
+    echo "  --max-ctx          -> Use safe high-context ceiling (65,536 / 64k)"
     echo ""
     exit 1
 }
@@ -59,8 +60,12 @@ while [[ $# -gt 0 ]]; do
             CTX_SIZE="$2"
             shift 2
             ;;
+        --parallel)
+            PARALLEL="$2"
+            shift 2
+            ;;
         --max-ctx|--max-context|max-ctx)
-            CTX_SIZE="131072"
+            CTX_SIZE="65536"
             shift
             ;;
         -h|--help)
@@ -84,7 +89,7 @@ if [ "$MODE" = "q5" ]; then
       --model "$MODEL_Q5" \
       --n-gpu-layers 99 \
       --ctx-size "$CTX_SIZE" \
-      --parallel 2 \
+      --parallel "$PARALLEL" \
       --cont-batching \
       --batch-size 2048 \
       --ubatch-size 2048 \
@@ -107,7 +112,7 @@ else
       --model "$MODEL_Q8" \
       --n-gpu-layers 99 \
       --ctx-size "$CTX_SIZE" \
-      --parallel 2 \
+      --parallel "$PARALLEL" \
       --cont-batching \
       --batch-size 2048 \
       --ubatch-size 2048 \
