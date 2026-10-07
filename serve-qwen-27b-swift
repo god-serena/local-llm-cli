@@ -7,6 +7,7 @@
 #   LLAMA_MODELS_DIR - Path to GGUF models folder (default: $HOME/llama-models)
 #   LLAMA_PORT       - Server port (default: 8080)
 #   LLAMA_HOST       - Server host IP (default: 0.0.0.0)
+#   LLAMA_CACHE_RAM  - Max prompt cache RAM in MiB (default: 8192 / 8 GB)
 
 LLAMA_BIN="${LLAMA_BIN:-$HOME/.local/bin/llama}"
 MODELS_DIR="${LLAMA_MODELS_DIR:-$HOME/llama-models}"
