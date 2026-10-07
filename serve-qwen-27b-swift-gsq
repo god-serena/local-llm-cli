@@ -17,14 +17,17 @@ PORT="${LLAMA_PORT:-8080}"
 HOST="${LLAMA_HOST:-0.0.0.0}"
 CTX_SIZE="32768"
 PARALLEL="1"
+CACHE_RAM="${LLAMA_CACHE_RAM:-8192}"
 
 usage() {
-    echo "Usage: serve-qwen-27b-swift-gsq [mtp|nomtp] [--max-ctx] [--port 8080] [--ctx 32768] [--parallel 1]"
+    echo "Usage: serve-qwen-27b-swift-gsq [mtp|nomtp] [--max-ctx] [--max-cache] [--cache-ram 8192] [--port 8080] [--ctx 32768] [--parallel 1]"
     echo ""
     echo "Options:"
     echo "  mtp (default) -> Built-in MTP speculative decoding"
     echo "  nomtp         -> Standard generation without speculative decoding"
     echo "  --max-ctx     -> Use safe high-context ceiling (65,536 / 64k, 100% GPU VRAM safe)"
+    echo "  --max-cache   -> Expand host RAM prompt cache to 12 GB (12,288 MiB, default: 8,192 MiB)"
+    echo "  --cache-ram   -> Custom host RAM prompt cache size in MiB"
     echo ""
     exit "${1:-1}"
 }
@@ -50,6 +53,14 @@ while [[ $# -gt 0 ]]; do
         --max-ctx|--max-context|max-ctx)
             CTX_SIZE="65536"
             shift
+            ;;
+        --max-cache|--max-cache-ram)
+            CACHE_RAM="12288"
+            shift
+            ;;
+        --cache-ram)
+            CACHE_RAM="$2"
+            shift 2
             ;;
         --parallel)
             PARALLEL="$2"
@@ -91,6 +102,7 @@ exec "$LLAMA_BIN" server \
   --cache-type-k q8_0 \
   --cache-type-v q4_0 \
   --flash-attn on \
+  --cache-ram "$CACHE_RAM" \
   --metrics \
   --port "$PORT" \
   --host "$HOST"
