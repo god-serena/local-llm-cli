@@ -37,16 +37,6 @@ Run the one-time setup script:
 > **Metrics & Observability**:
 > All server launchers include `--metrics` enabled by default, exposing Prometheus-compatible performance metrics at `http://<host>:<port>/metrics` (e.g. `http://localhost:8080/metrics`).
 
-#### `serve-qwythos` (Qwythos 9B v2 MTP)
-Start `llama-server` for Qwythos 9B on `0.0.0.0:8080`:
-
-```bash
-serve-qwythos
-
-# Serve with Q8_0 precision mode
-serve-qwythos q8
-```
-
 #### `serve-qwen-27b-swift` (Swift-Qwen 3.8 27B Q3_K_S)
 Start `llama-server` for Swift-Qwen 3.8 27B (Q3_K_S) on `0.0.0.0:8080`:
 

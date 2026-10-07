@@ -59,7 +59,7 @@ if [ -x "$HARNESS_BIN" ]; then
   if [ -n "$SYSTEM_PROMPT" ]; then
     EXTRA_HARNESS_ARGS+=(--append-system-prompt "$SYSTEM_PROMPT")
   fi
-  "$HARNESS_BIN" --provider llama-cpp --model "local" "${EXTRA_HARNESS_ARGS[@]}" -p "$PROMPT" < /dev/null 2>/dev/null && exit 0
+  "$HARNESS_BIN" --no-extensions --provider llama-cpp --model "local" "${EXTRA_HARNESS_ARGS[@]}" -p "$PROMPT" < /dev/null 2>/dev/null && exit 0
 fi
 
 # 2. Fallback: Direct HTTP call to llama-server (model omitted)
